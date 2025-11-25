@@ -52,7 +52,7 @@ class OffensiveUberAgent(CaptureAgent):
         
     def choose_action(self, game_state) :
         return game_state.get_legal_actions(self.index)[0]
-    """THIS IS NOT IN THE CODE"""
+    """NEW CHANGE"""
 class ReflexCaptureAgent(CaptureAgent):
     """
     A base class for reflex agents that choose score-maximizing actions
