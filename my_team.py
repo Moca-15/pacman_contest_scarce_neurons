@@ -19,7 +19,7 @@ from contest.util import nearest_point
 #################
 
 def create_team(first_index, second_index, is_red,
-                first='OffensiveReflexAgent', second='DefensiveReflexAgent', num_training=0):
+                first='OffensiveUberAgent', second='DefensiveReflexAgent', num_training=0):
     """
     This function should return a list of two agents that will form the
     team, initialized using firstIndex and secondIndex as their agent
@@ -40,7 +40,19 @@ def create_team(first_index, second_index, is_red,
 ##########
 # Agents #
 ##########
+class OffensiveUberAgent(CaptureAgent):
 
+    def __init__(self, index, time_for_computing=.1) : 
+        super().__init__(index, time_for_computing)
+        self.start = None
+
+    def register_initial_state(self, game_state) :
+        self.start = game_state.get_agent_position(self.index)
+        CaptureAgent.register_initial_state(self, game_state)
+        
+    def choose_action(self, game_state) :
+        
+    
 class ReflexCaptureAgent(CaptureAgent):
     """
     A base class for reflex agents that choose score-maximizing actions
