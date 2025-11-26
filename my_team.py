@@ -50,9 +50,96 @@ class OffensiveUberAgent(CaptureAgent):
         self.start = game_state.get_agent_position(self.index)
         CaptureAgent.register_initial_state(self, game_state)
         
-    def choose_action(self, game_state) :
-        return game_state.get_legal_actions(self.index)[0]
-    """NEW CHANGE"""
+    def choose_action(self, game_state):
+        """
+        Picks among the actions with the highest Q(s,a).
+        """
+        actions = game_state.get_legal_actions(self.index)
+
+        # You can profile your evaluation time by uncommenting these lines
+        # start = time.time()
+        values = [self.evaluate(game_state, a) for a in actions]
+        # print 'eval time for agent %d: %.4f' % (self.index, time.time() - start)
+
+        max_value = max(values)
+        best_actions = [a for a, v in zip(actions, values) if v == max_value]
+
+        food_left = len(self.get_food(game_state).as_list())
+
+        if food_left <= 2:
+            best_dist = 9999
+            best_action = None
+            for action in actions:
+                successor = self.get_successor(game_state, action)
+                pos2 = successor.get_agent_position(self.index)
+                dist = self.get_maze_distance(self.start, pos2)
+                if dist < best_dist:
+                    best_action = action
+                    best_dist = dist
+            return best_action
+        
+        return random.choice(best_actions)
+
+    def get_successor(self, game_state, action):
+        """
+        Finds the next successor which is a grid position (location tuple).
+        """
+        successor = game_state.generate_successor(self.index, action)
+        pos = successor.get_agent_state(self.index).get_position()
+        if pos != nearest_point(pos):
+            # Only half a grid position was covered
+            return successor.generate_successor(self.index, action)
+        else:
+            return successor
+
+    def evaluate(self, game_state, action):
+        """
+        Computes a linear combination of features and feature weights
+        """
+        features = self.get_features(game_state, action)
+        weights = self.get_weights(game_state, action)
+        return features * weights
+
+    def get_features(self, game_state, action):
+        features = util.Counter()
+        successor = self.get_successor(game_state, action)
+        food_list = self.get_food(successor).as_list()
+        caps_list = self.get_capsules(successor)
+        
+        old_ghost_list = game_state.get_ghost_positions()
+        new_ghost_list = successor.get_ghost_positions()
+        
+        features['successor_score'] = -len(food_list)  # self.getScore(successor)
+
+        # Compute distance to the nearest food
+
+        if len(food_list) > 0:  # This should always be True,  but better safe than sorry
+            my_pos = successor.get_agent_state(self.index).get_position()
+            min_distance = min([self.get_maze_distance(my_pos, food) for food in food_list])
+            features['distance_to_food'] = min_distance
+
+        if len(caps_list) > 0 :
+            my_pos = successor.get_agent_state(self.index).get_position()
+            min_distance = min([self.get_maze_distance(my_pos, capsule) for capsule in caps_list])
+            features['distance_to_capsule'] = min_distance
+
+        old_ghost_dist = min([self.get_maze_distance(my_pos, ghost) for ghost in old_ghost_list])
+        new_ghost_dist = min([self.get_maze_distance(my_pos, ghost) for ghost in new_ghost_list])
+
+        if new_ghost_dist < 4 : features['distance_to_ghost'] = new_ghost_dist
+        else : features['distance_to_ghost'] = 0
+        
+        return features
+
+    def get_weights(self, game_state, action):
+        return {'successor_score': 100,
+                'distance_to_food': -1,
+                'distance_to_capsule' : -50,
+                'distance_to_ghost' : 100
+                }
+
+
+
 class ReflexCaptureAgent(CaptureAgent):
     """
     A base class for reflex agents that choose score-maximizing actions
