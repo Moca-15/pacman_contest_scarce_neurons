@@ -103,11 +103,16 @@ class OffensiveUberAgent(CaptureAgent):
     def get_features(self, game_state, action):
         features = util.Counter()
         successor = self.get_successor(game_state, action)
+
+        
+        
         food_list = self.get_food(successor).as_list()
         caps_list = self.get_capsules(successor)
+
+        old_enemy_dist = self.get_min_enemy_distance(game_state)
+        new_enemy_dist = self.get_min_enemy_distance(successor)
         
-        old_ghost_list = game_state.get_ghost_positions()
-        new_ghost_list = successor.get_ghost_positions()
+        features['distance_to_enemy'] = new_enemy_dist - old_enemy_dist
         
         features['successor_score'] = -len(food_list)  # self.getScore(successor)
 
@@ -123,22 +128,37 @@ class OffensiveUberAgent(CaptureAgent):
             min_distance = min([self.get_maze_distance(my_pos, capsule) for capsule in caps_list])
             features['distance_to_capsule'] = min_distance
 
-        old_ghost_dist = min([self.get_maze_distance(my_pos, ghost) for ghost in old_ghost_list])
-        new_ghost_dist = min([self.get_maze_distance(my_pos, ghost) for ghost in new_ghost_list])
-
-        if new_ghost_dist < 4 : features['distance_to_ghost'] = new_ghost_dist
-        else : features['distance_to_ghost'] = 0
-        
         return features
 
     def get_weights(self, game_state, action):
         return {'successor_score': 100,
                 'distance_to_food': -1,
                 'distance_to_capsule' : -50,
-                'distance_to_ghost' : 100
+                'distance_to_enemy' : 1000
                 }
+    
+    def get_min_enemy_distance(self, game_state) :
 
+        my_pos = game_state.get_agent_state(self.index).get_position()
+        
+        adverse_idx = game_state.get_blue_team_indices() if self.red else game_state.get_red_team_indices()
 
+        enemy_pos =  list()
+        
+        for i in adverse_idx :
+            pos = game_state.get_agent_position(i) 
+            if pos : enemy_pos.append(pos)
+            
+        enemy_dist = 0;
+
+        if len(enemy_pos) :
+            enemy_dist = min([util.manhattan_distance(my_pos, e_pos) for e_pos in enemy_pos])
+
+        else : enemy_dist =  min([game_state.get_agent_distances()[i] for i in adverse_idx])
+       
+
+        return enemy_dist
+        
 
 class ReflexCaptureAgent(CaptureAgent):
     """
