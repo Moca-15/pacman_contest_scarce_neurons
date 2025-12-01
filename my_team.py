@@ -118,7 +118,7 @@ class OffensiveUberAgent(CaptureAgent):
 
         # Compute distance to the nearest food
 
-        if len(food_list) > 0:  # This should always be True,  but better safe than sorry
+        if len(food_list) > 0 :  # This should always be True,  but better safe than sorry
             my_pos = successor.get_agent_state(self.index).get_position()
             min_distance = min([self.get_maze_distance(my_pos, food) for food in food_list])
             features['distance_to_food'] = min_distance
@@ -134,7 +134,7 @@ class OffensiveUberAgent(CaptureAgent):
         return {'successor_score': 100,
                 'distance_to_food': -1,
                 'distance_to_capsule' : -50,
-                'distance_to_enemy' : 1000
+                'distance_to_enemy' : 10
                 }
     
     def get_min_enemy_distance(self, game_state) :
@@ -152,7 +152,7 @@ class OffensiveUberAgent(CaptureAgent):
         enemy_dist = 0;
 
         if len(enemy_pos) :
-            enemy_dist = min([util.manhattan_distance(my_pos, e_pos) for e_pos in enemy_pos])
+            enemy_dist = min([self.get_maze_distance(my_pos, e_pos) for e_pos in enemy_pos])
 
         else : enemy_dist =  min([game_state.get_agent_distances()[i] for i in adverse_idx])
        
